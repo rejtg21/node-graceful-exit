@@ -1,5 +1,5 @@
 {
-  "name": "graceful-exit",
+  "name": "node-graceful-exit",
   "version": "1.0.0",
   "description": "add/run additional process before the node intentionally/unintentionally close the app.",
   "main": "index.js",
