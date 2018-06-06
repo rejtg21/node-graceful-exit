@@ -1,0 +1,25 @@
+{
+  "closeEvents": [
+    {
+        "code": "SIGINT",
+        "desc": "A user intentionally killed the process.",
+        "comment": "on ctrl + c"
+    },
+    {
+        "code": "exit",
+        "desc": "Application will now exit.",
+        "comment": "on app close"
+    },
+    {
+
+        "code": "uncaughtException",
+        "desc": "There was an uncaught exception.",
+        "comment": "on uncaught exceptions"
+    },
+    {
+        "code": "SIGTERM",
+        "desc": "Application was force killed.",
+        "comment": "on process terminated/kill"
+    }
+  ]
+}
