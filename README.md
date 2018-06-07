@@ -1,5 +1,8 @@
 # node-graceful-exit
-add/run additional process before the node intentionally/unintentionally close the app.
+Add/Run additional process before the node intentionally/unintentionally close the app.
+
+# Setup
+This library was setup with `ES2015`.
 
 # Installation
 `npm install --save node-graceful-exit`
