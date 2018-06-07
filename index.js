@@ -23,7 +23,7 @@ function NodeGracefulExit(options) {
 
 NodeGracefulExit.prototype = {
     init: init,
-    include: include,
+    wait: wait,
     addEvent: addCloseEvent,
     removeEvent: removeCloseEvent
 };
@@ -44,21 +44,28 @@ function removeCloseEvent(key, value) {
     });
 }
 
-function include(callback, option) {
+function wait(callback, option) {
     option = option || {};
+
+    // convert all callbacks to promise
+    let promiseCallback = new Promise(function(resolve, reject) {
+        callback.bind(callback, resolve);
+    });
     // push first the callback and wait for end process
-    callbacks.push({run: callback, option});
+    callbacks.push({run: promiseCallback, option});
 }
 
-function runCallbacks(data) {
+function iterateCallbacks(data, count = 0) {
     log(data.code, ' process event was triggered.');
     log(data.desc);
-    callbacks.forEach(function(callback) {
-        // if option is to run once do not run again the callback if it is already ran.
-        if (callback.option.once && callback.ran) return;
 
-        callback.run(data);
+    let callback = callbacks[count];
+    if (callback.option.once && callback.ran) return;
+
+    return callback.run(data).then(function() {
         callback.ran = true;
+        count++;
+        return iterateCallbacks(data, count);
     });
 }
 
@@ -83,13 +90,16 @@ function init() {
 function _onEnd(err) {
     let data = this;
     data.message = err;
-
-    // run process before closing
     // log('Before process end, running all registered callbacks');
-    runCallbacks(data);
-    // log('All registered callbacks have been run, process will now end ...');
-    // inform to continue to exit
-    process.exit(0);
+    // run process in callback before closing
+    return iterateCallbacks(data).then(function() {
+        // log('All registered callbacks have run, process will now end ...');
+        // inform to continue to exit
+        process.exit(0);
+    }, function(errMsg) {
+        console.error('Error with one of the callback', errMsg);
+        process.exit(0);
+    });
 }
 
 function log() {
