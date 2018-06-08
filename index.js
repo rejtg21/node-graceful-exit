@@ -23,7 +23,7 @@ function NodeGracefulExit(options) {
 
 NodeGracefulExit.prototype = {
     init: init,
-    wait: wait,
+    include: include,
     addEvent: addCloseEvent,
     removeEvent: removeCloseEvent
 };
@@ -44,28 +44,44 @@ function removeCloseEvent(key, value) {
     });
 }
 
-function wait(callback, option) {
-    option = option || {};
-
-    // convert all callbacks to promise
-    let promiseCallback = new Promise(function(resolve, reject) {
-        callback.bind(callback, resolve);
-    });
+function include(callback, option) {
+    option = option || {once: true};
     // push first the callback and wait for end process
-    callbacks.push({run: promiseCallback, option});
+    callbacks.push({run: callback, option});
 }
 
 function iterateCallbacks(data, count = 0) {
+    let maxLength = callbacks.length;
+    let callback = callbacks[count];
+
+    if (count >= maxLength || (callback.option.once && callback.ran))
+        return new Promise(function(resolve, reject) { return resolve(); });
+
     log(data.code, ' process event was triggered.');
     log(data.desc);
 
-    let callback = callbacks[count];
-    if (callback.option.once && callback.ran) return;
+    // convert all callbacks to promise
+    let promiseCallback = processCallback(callback);
 
-    return callback.run(data).then(function() {
+    return promiseCallback.then(function() {
         callback.ran = true;
         count++;
+        console.log('calling success');
         return iterateCallbacks(data, count);
+    });
+}
+
+function processCallback(callback) {
+    return new Promise(function(resolve, reject) {
+        let data = {
+            wait: false,
+            done: resolve
+        };
+
+        callback.run(data);
+
+        if (!data.wait)
+            resolve();
     });
 }
 
@@ -95,11 +111,16 @@ function _onEnd(err) {
     return iterateCallbacks(data).then(function() {
         // log('All registered callbacks have run, process will now end ...');
         // inform to continue to exit
-        process.exit(0);
+        exit();
     }, function(errMsg) {
         console.error('Error with one of the callback', errMsg);
-        process.exit(0);
+        exit();
     });
+}
+
+function exit() {
+    log('will now gracefully exit');
+    process.exit();
 }
 
 function log() {
